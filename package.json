@@ -1,0 +1,23 @@
+{
+  "name": "famos-viewer",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "azure-storage": "2.5.0",
+    "body-parser": "^1.18.3",
+    "chart.js": "^2.7.2",
+    "papaparse": "^4.6.0",
+    "errorhandler": "^1.5.0",
+    "express": "^4.16.3",
+    "jquery": "^3.3.1",
+    "leaflet": "^1.3.4",
+    "method-override": "^3.0.0",
+    "morgan": "^1.9.1",
+    "npm": "^6.4.1",
+    "pug": "^2.0.3",
+    "serve-favicon": "^2.5.0"
+  }
+}

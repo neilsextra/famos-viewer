@@ -1,0 +1,6 @@
+{
+    "blobService": "tsoblob1",
+    "blobTable": "strava_monitor",
+    "blobUri": "https://tsoblob1.blob.core.windows.net/",
+    "clientID": "22263"
+ } 
