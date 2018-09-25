@@ -1,6 +1,32 @@
 var map = null;
 var csvFile = null;
 
+/**
+ * Distance between to points
+ * 
+ * @param {Float} lat1 
+ * @param {Float} lon1 
+ * @param {Float} lat2 
+ * @param {Float} lon2 
+ */
+function distance(lat1, lon1, lat2, lon2) {
+	var radlat1 = Math.PI * lat1/180;
+	var radlat2 = Math.PI * lat2/180;
+	var theta = lon1-lon2;
+	var radtheta = Math.PI * theta/180;
+    var dist = Math.sin(radlat1) * Math.sin(radlat2) +
+               Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+	if (dist > 1) {
+		dist = 1;
+	}
+    dist = Math.acos(dist)
+    
+	dist = dist * 180/Math.PI;
+	dist = dist * 60 * 1.1515;
+    return dist * 1.609344;
+    
+}
+
  /**
   * Inactivate Tabs
   * 
@@ -127,10 +153,20 @@ function showCharts(columns, rows) {
     var length = rows.length;
     var modulus = length >= 100000 ? 1000 : length >= 10000 ? 100 : 1;
     var totalSpeed = 0.0;
+
+    var distanceKms = 0;
+    var latlng = null;
+
     for (row in rows) {
 
         if (rows[row][11] && rows[row][12]) {
-    
+
+            if (latlng) {
+                distanceKms += distance(latlng[0], latlng[1], 
+                                        parseFloat(rows[row][6]), parseFloat(rows[row][7]));
+            }
+
+            latlng = [parseFloat(rows[row][6]), parseFloat(rows[row][7])];
             totalSpeed += parseFloat(rows[row][11]);
     
             if (row % modulus == 0) {
@@ -184,7 +220,8 @@ function showCharts(columns, rows) {
 
     $('#details').html('<b>Start: </b><p/>' + (new Date(Math.trunc(rows[0][12]) * 1000)) +
     '<p/><b>Finish: </b><p/>' + (new Date(Math.trunc(labels[labels.length - 1]) * 1000)) +
-    '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph");
+    '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph" +
+    '<p/><b>Distance Travelled: </b><p/>' + (distanceKms.toFixed(2)) + "&nbsp;kms");
     $('#details').css('display', 'inline-block');
 
 }
