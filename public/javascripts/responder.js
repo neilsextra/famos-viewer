@@ -126,9 +126,13 @@ function showCharts(columns, rows) {
 
     var length = rows.length;
     var modulus = length >= 100000 ? 1000 : length >= 10000 ? 100 : 1;
-
+    var totalSpeed = 0.0;
     for (row in rows) {
+
         if (rows[row][11] && rows[row][12]) {
+    
+            totalSpeed += parseFloat(rows[row][11]);
+    
             if (row % modulus == 0) {
                dataSpeed.push(rows[row][11]);
                dataHeight.push(rows[row][4]);
@@ -149,7 +153,7 @@ function showCharts(columns, rows) {
             fill: false
       }],
       options: {
-        title: {
+        title: {    
           display: true,
           text: 'Speed of Vehicle'
         }
@@ -178,13 +182,15 @@ function showCharts(columns, rows) {
     
     });  
 
+    $('#details').html('<b>Start: </b><p/>' + (new Date(Math.trunc(rows[0][12]) * 1000)) +
+    '<p/><b>Finish: </b><p/>' + (new Date(Math.trunc(labels[labels.length - 1]) * 1000)) +
+    '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph");
+    $('#details').css('display', 'inline-block');
+
 }
 
 function display(columns, rows) {
-    var header = $('#caption').html();
 
-    $('#caption').html(header + " - " + (new Date(Math.trunc(rows[0][12]) * 1000)));
- 
     showMap(columns, rows);
 
     window.setTimeout(() => {
@@ -254,7 +260,8 @@ $(document).ready(function() {
     });
 
 	var processFiles = function(files) {
- 
+        $('#details').css('display', 'none');
+
  		if (files && typeof FileReader !== "undefined") {
 			for(var iFile = 0; iFile<files.length; iFile++) {
 			    readFile(files[iFile]);
