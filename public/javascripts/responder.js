@@ -31,7 +31,7 @@ var csvFile = null;
  * @param {*} button the Tab's button
  */
 function showTab(evt, tab, button) {
- 
+
     inactivateTabs();
 
     // Show the current tab, and add an "active" class to the button that opened the tab
@@ -44,6 +44,8 @@ function showTab(evt, tab, button) {
 
 function showMap(columns, rows) {
     
+    $('#map').css('display', 'none');  
+
     if (map != null) {
 
         map.off();
@@ -51,27 +53,41 @@ function showMap(columns, rows) {
     }
 
     var coordinates = [];
-    var startPos = null;
+    var midLatLng = null;
+    var startLatLng = null;
     var midPos = Math.trunc(rows.length/2);
 
     for (row in rows) {
-        var latlng = [rows[row][6], rows[row][7]];
- 
-        if (row == midPos) {
-            startPos = latlng;
+        if (rows[row][6] && rows[row][7]) {
+            var latlng = [rows[row][6], rows[row][7]];
+
+            if (startLatLng == null) {
+                startLatLng = latlng;
+            }
+
+            if (row >= midPos && !midLatLng) {
+                midLatLng = latlng;
+            }
+
+            coordinates.push(latlng);
         }
 
-        coordinates.push(latlng);
-
     }
- 
-    try {
-       map = L.map('map').setView([startPos[0], startPos[1]], 20);
+    
+    map = L.map('map').setView([midLatLng[0], midLatLng[1]], 15);
 
-       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 30,
-        minZoom: 9,
-        noWrap:true
+    var startIcon = L.icon({
+        iconUrl: 'icons/start-flag.png',
+        iconSize: [32, 32],
+        popupAnchor: [-3, -76]
+    });
+
+    L.marker(startLatLng, {icon: startIcon}).addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 30,
+    minZoom: 9,
+    noWrap:true
     }).addTo(map);
 
     var options = {}
@@ -90,29 +106,99 @@ function showMap(columns, rows) {
         map.invalidateSize();
         $('#map').css('display', 'inline-block');
 
-    }, 200);
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 500);
+    }, 100);
+
+    window.addEventListener("resize", function() {
+       map.invalidateSize();      
+    });
 
     $('.leaflet-control-attribution').hide();
-   
-    } catch (e) {
-        alert(e);
-    }
     
 }
 
-function display(columns, rows) {
+function showCharts(columns, rows) {
+    var dataSpeed = [];
+    var dataHeight = [];
+    var labels = [];
+
+    var length = rows.length;
+    var modulus = length >= 100000 ? 1000 : length >= 10000 ? 100 : 1;
+
+    for (row in rows) {
+        if (rows[row][11] && rows[row][12]) {
+            if (row % modulus == 0) {
+               dataSpeed.push(rows[row][11]);
+               dataHeight.push(rows[row][4]);
+               labels.push(Math.trunc(rows[row][12]));
+            }
+        }
+
+    }
+
+    new Chart(document.getElementById('speedChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+         datasets: [{ 
+            data: dataSpeed,
+            label: "Speed",
+            borderColor: "#3e95cd",
+            fill: false
+      }],
+      options: {
+        title: {
+          display: true,
+          text: 'Speed of Vehicle'
+        }
+      }
+    }
     
+    });  
+
+    new Chart(document.getElementById('heightChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+         datasets: [{ 
+            data: dataHeight,
+            label: "Height",
+            borderColor: "#3e95cd",
+            fill: false
+      }],
+      options: {
+        title: {
+          display: true,
+          text: 'Terrain Height above Sea Level'
+        }
+      }
+    }
+    
+    });  
+
+}
+
+function display(columns, rows) {
+    var header = $('#caption').html();
+
+    $('#caption').html(header + " - " + (new Date(Math.trunc(rows[0][12]) * 1000)));
+ 
     showMap(columns, rows);
 
     window.setTimeout(() => {
 
-    inactivateTabs();
+        inactivateTabs();
 
         $('#rendering').css('display', 'inline-block');
         $('#structureFrame').css('display', 'inline-block');
         $('#uploadWait').css('display', 'none');
         $('#tab1').css('text-decoration', 'underline');
         $('#tab1').addClass('active');
+
+        showCharts(columns, rows);
+    
         console.log('completed conversion');
 
     }, 100);

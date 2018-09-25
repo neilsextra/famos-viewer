@@ -2,7 +2,7 @@ extends layout
 
 block content
   div.main(style="width: 100%; height:100%; z-index:99; overflow:hidden;")
-  div(style="position: absolute; top:0px; bottom:0px; left:0px; right:0px; background: url('icons/blurred-city-lights-night1.jpg'); background-size: cover;  background-repeat: no-repeat;")
+  div(style="position: absolute; top:0px; bottom:0px; left:0px; right:0px; background: url('icons/background.jpg'); background-size: cover;  background-repeat: no-repeat;")
     div#header 
       h1#caption(style='width:80%') &nbsp; Famos Log Analyzer
       div(style="position:absolute; top:1px; height:60px; width:200px; color:white; right:0px; opacity:1.0")
@@ -19,7 +19,7 @@ block content
               input#uploadbtn(class='uploadbtn' type='button' value="Select File")
             input#upload(type='file')
       div#uploadWait(style="display:none;")
-        div(style="position:absolute; left:27%; top:80%")
+        div(style="position:absolute; left:27%; bottom:60px;")
           div#uploadProgress(class="c100 p0 big blue")
             span#percentage 0%
             div.slice
@@ -32,17 +32,23 @@ block content
       div#rendering(style="width:100%; display:none")
         div.tab#tab
           button.tablinks#tab1(onclick="showTab(event, 'structureFrame', 'tab1')" value="Structure") Route
-          button.tablinks#tab2(onclick="showTab(event, 'textFrame', 'tab2')" value="Text") Speed
+          button.tablinks#tab2(onclick="showTab(event, 'speedFrame', 'tab2')" value="Speed") Speed
+          button.tablinks#tab3(onclick="showTab(event, 'heightFrame', 'tab3')" value="Height") Height
         div.tabcontent#structureFrame(style="left:10px; right:10px; top:60px; bottom:52px; overflow:auto; background-color:black; opacity:0.9; position:absolute;")
           div#map(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;")
-        div.tabcontent#textFrame(style="left:10px; right:10px; top:60px; bottom:52px; background-color:black; opacity:0.9; position:absolute;")
-          div#speed
+        div.tabcontent#speedFrame(style="left:10px; right:10px; top:60px; bottom:52px; background-color:white; opacity:0.9; position:absolute;")
+          div#speed(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;")
+            canvas#speedChart(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;")
+        div.tabcontent#heightFrame(style="left:10px; right:10px; top:60px; bottom:52px; background-color:white; opacity:0.9; position:absolute;")
+          div#height(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;")
+            canvas#heightChart(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;")
         div#actions
           input#printBtn(type='button' value="Save" style="position:absolute; bottom:12px; height:30px; width:90px; left:10px;")
   
   script(src="/modules/jquery/dist/jquery.min.js")
   script(src="/modules/leaflet/dist/leaflet.js") 
   script(src="/modules/papaparse/papaparse.min.js")
+  script(src="/modules/chart.js/dist/Chart.js") 
   
   script(src="/javascripts/responder.js")
 
