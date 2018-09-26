@@ -35,6 +35,25 @@ function degr2rad(degr) {
     return degr * Math.PI / 180; 
 }
 
+function bearing(endpoint, startpoint) {
+    endpoint.lat = x1;
+    endpoint.lng = y1;
+    startpoint.lat = x2;
+    startpoint.lng = y2;
+
+    var radians = Math.atan2((y1 - y2), (x1 - x2));
+
+    var compassReading = radians * (180 / Math.PI);
+
+  //  var coordNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
+    var coordIndex = Math.round(compassReading / 45);
+    if (coordIndex < 0) {
+        coordIndex = coordIndex + 8
+    };
+   return compassReading / 45;
+    //return coordNames[coordIndex]; // returns the coordinate value
+}
+
 /**
  * @param latLngInDeg array of arrays with latitude and longtitude
  *   pairs in degrees. e.g. [[latitude1, longtitude1], [latitude2
@@ -69,6 +88,7 @@ function getLatLngCenter(latLngInDegr) {
     var lat = Math.atan2(avgZ, hyp);
 
     return ([rad2degr(lat), rad2degr(lng)]);
+
 }
 
  /**
@@ -281,6 +301,56 @@ function showCharts(columns, rows) {
 
 }
 
+function showGuages(columns, rows) {
+
+    var speedGuage = new RadialGauge({
+        renderTo: 'gaugesDisplay',
+        width: 200,
+        height: 200,
+        units: 'Km/h',
+        title: false,
+        value: 0,
+        minValue: 0,
+        maxValue: 220,
+        majorTicks: [
+            '0','20','40','60','80','100','120','140','160','180','200','220'
+        ],
+        minorTicks: 2,
+        strokeTicks: false,
+        highlights: [
+            { from: 0, to: 50, color: 'rgba(0,255,0,.15)' },
+            { from: 50, to: 100, color: 'rgba(255,255,0,.15)' },
+            { from: 100, to: 150, color: 'rgba(255,30,0,.25)' },
+            { from: 150, to: 200, color: 'rgba(255,0,225,.25)' },
+            { from: 200, to: 220, color: 'rgba(0,0,255,.25)' }
+        ],
+        colorPlate: '#222',
+        colorMajorTicks: '#f5f5f5',
+        colorMinorTicks: '#ddd',
+        colorTitle: '#fff',
+        colorUnits: '#ccc',
+        colorNumbers: '#eee',
+        colorNeedle: 'rgba(240, 128, 128, 1)',
+        colorNeedleEnd: 'rgba(255, 160, 122, .9)',
+        valueBox: true,
+        animationRule: 'bounce',
+        animationDuration: 500
+    }).draw();
+
+    $("#range").attr('max', rows.length);
+    $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[" + 1 + "]");
+
+    var slider = document.getElementById("range");
+
+    slider.oninput = function() {
+         $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + this.value + "]");
+
+        speedGuage.value = parseFloat(rows[this.value][11]);
+
+    }
+    
+}
+
 function display(columns, rows) {
 
     showMap(columns, rows);
@@ -296,7 +366,7 @@ function display(columns, rows) {
         $('#tab1').addClass('active');
 
         showCharts(columns, rows);
-    
+        showGuages(columns, rows);
         console.log('completed conversion');
 
     }, 100);
