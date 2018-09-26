@@ -4,10 +4,10 @@ var csvFile = null;
 /**
  * Distance between to points
  * 
- * @param {Float} lat1 
- * @param {Float} lon1 
- * @param {Float} lat2 
- * @param {Float} lon2 
+ * @param {Float} lat1 the from Latitude
+ * @param {Float} lon1 the from Longitude
+ * @param {Float} lat2 the to Latitude
+ * @param {Float} lon2 the to Longitude
  */
 function distance(lat1, lon1, lat2, lon2) {
 	var radlat1 = Math.PI * lat1/180;
@@ -35,14 +35,8 @@ function degr2rad(degr) {
     return degr * Math.PI / 180; 
 }
 
-function bearing(endpoint, startpoint) {
-    endpoint.lat = x1;
-    endpoint.lng = y1;
-    startpoint.lat = x2;
-    startpoint.lng = y2;
-
-    var radians = Math.atan2((y1 - y2), (x1 - x2));
-
+function calculateBearing(endpoint, startpoint) {
+    var radians = Math.atan2((endpoint[1]- startpoint[1]), (endpoint[0]- startpoint[0]));
     var compassReading = radians * (180 / Math.PI);
 
   //  var coordNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
@@ -55,6 +49,8 @@ function bearing(endpoint, startpoint) {
 }
 
 /**
+ * Get the Central Position within a series of Lats/Longs
+ * 
  * @param latLngInDeg array of arrays with latitude and longtitude
  *   pairs in degrees. e.g. [[latitude1, longtitude1], [latitude2
  *   [longtitude2] ...]
@@ -89,10 +85,20 @@ function getLatLngCenter(latLngInDegr) {
 
     return ([rad2degr(lat), rad2degr(lng)]);
 
-}
+ }
 
  /**
-  * Inactivate Tabs
+  * Clear the Canvas
+  * @param {String} containerID the container
+  *  @param {String} canvasID the canvas to clear
+  */
+ function clearCanvas(parentID, canvasID) {
+    $('#' + canvasID).remove(); 
+
+    $(parentID).append('<canvas id= '+ canvasID + ' style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;"/>');
+ }
+ /**
+  * Inactivate the Tabs
   * 
   */
  function inactivateTabs() {
@@ -217,6 +223,12 @@ function showMap(columns, rows) {
     
 }
 
+/**
+ * Show the Charts
+ * 
+ * @param {*} columns 
+ * @param {*} rows 
+ */
 function showCharts(columns, rows) {
     var dataSpeed = [];
     var dataHeight = [];
@@ -252,6 +264,8 @@ function showCharts(columns, rows) {
 
     }
 
+    clearCanvas('#speed', 'speedChart');
+
     new Chart(document.getElementById('speedChart'), {
         type: 'line',
         data: {
@@ -269,8 +283,9 @@ function showCharts(columns, rows) {
         }
       }
     }
-    
     });  
+    
+    clearCanvas('#height', 'heightChart');
 
     new Chart(document.getElementById('heightChart'), {
         type: 'line',
@@ -304,7 +319,7 @@ function showCharts(columns, rows) {
 function showGuages(columns, rows) {
 
     var speedGuage = new RadialGauge({
-        renderTo: 'gaugesDisplay',
+        renderTo: 'speedGuage',
         width: 200,
         height: 200,
         units: 'Km/h',
@@ -337,6 +352,55 @@ function showGuages(columns, rows) {
         animationDuration: 500
     }).draw();
 
+    var bearingGuage = new RadialGauge({
+        renderTo: 'bearingGuage',
+        width: 200,
+        height: 200,
+        title: false,
+        value: 0,
+        minValue: 0,
+        maxValue: 360,
+        majorTicks: [
+            'N','NE','E','SE','S','SW','W','NW','N'
+        ],
+        minorTicks: 22,
+        colorPlate: '#222',
+        colorMajorTicks: '#f5f5f5',
+        colorMinorTicks: '#ddd',
+        ticksAngle: 360,
+        startAngle: 180,
+        highlights: false,
+        colorPlate: '#222',
+        colorMajorTicks: '#f5f5f5',
+        colorMinorTicks: '#ddd',
+        colorNumbers: '#ccc',
+        colorNeedle: 'rgba(240, 128, 128, 1)',
+        colorNeedleEnd: 'rgba(255, 160, 122, .9)',
+        valueBox: false,
+        valueTextShadow: false,
+        colorCircleInner: "#fff",
+        colorNeedleCircleOuter: "#ccc",
+        needleCircleSize: 15,
+        needleCircleOuter: false,
+        animationRule: 'linear',
+        needleType:'line',
+        needleStart:75,
+        needleEnd: 99,
+        needleWidth: 3,
+        borders: true,
+        borderInnerWidth: 0,
+        borderMiddleWidth: 0,
+        borderOuterWidth: 10,
+        colorBorderOuter: '#ccc',
+        colorBorderOuterEnd: '#ccc',
+        colorNeedleShadowDown: '#222',
+        borderShadowWidth: 0,
+        animationDuration: 100
+    }).draw();
+
+    speedGuage.value = 0;
+    bearingGuage.value = 0;
+
     $("#range").attr('max', rows.length);
     $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[" + 1 + "]");
 
@@ -346,6 +410,22 @@ function showGuages(columns, rows) {
          $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + this.value + "]");
 
         speedGuage.value = parseFloat(rows[this.value][11]);
+
+        if (this.value < rows.length) {
+            var nextObs = parseInt(this.value) + 1;
+            var from = [parseFloat(rows[this.value][6]), parseFloat(rows[this.value][7])];
+            var to = [parseFloat(rows[nextObs][6]), parseFloat(rows[nextObs][7])];
+
+           bearingGuage.value = calculateBearing(from, to) * 100;
+ 
+        } else {
+            var prevObs = parseInt(this.value) - 1;
+            var from = [parseFloat(rows[prevObs][6]), parseFloat(rows[prevObs][7])];
+            var to = [parseFloat(rows[this.value][6]), parseFloat(rows[this.value][7])];
+       
+            bearingGuage.value = calculateBearing(from, to) * 100;
+       
+        }
 
     }
     
