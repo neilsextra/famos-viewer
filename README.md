@@ -1,6 +1,5 @@
-# Strava Monitor
-
-Strava Monitor that keeps track of you and your friends within Azure Blob
+# Famos Viewer
+Viewer for IMC Famos Log - requires some processing before viewing
 
 
 
