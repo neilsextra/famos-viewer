@@ -27,6 +27,50 @@ function distance(lat1, lon1, lat2, lon2) {
     
 }
 
+function rad2degr(rad) { 
+    return rad * 180 / Math.PI; 
+}
+
+function degr2rad(degr) { 
+    return degr * Math.PI / 180; 
+}
+
+/**
+ * @param latLngInDeg array of arrays with latitude and longtitude
+ *   pairs in degrees. e.g. [[latitude1, longtitude1], [latitude2
+ *   [longtitude2] ...]
+ *
+ * @return array with the center latitude longtitude pairs in 
+ *   degrees.
+ */
+function getLatLngCenter(latLngInDegr) {
+    var LATIDX = 0;
+    var LNGIDX = 1;
+    var sumX = 0;
+    var sumY = 0;
+    var sumZ = 0;
+
+    for (var i=0; i<latLngInDegr.length; i++) {
+        var lat = degr2rad(latLngInDegr[i][LATIDX]);
+        var lng = degr2rad(latLngInDegr[i][LNGIDX]);
+        // sum of cartesian coordinates
+        sumX += Math.cos(lat) * Math.cos(lng);
+        sumY += Math.cos(lat) * Math.sin(lng);
+        sumZ += Math.sin(lat);
+    }
+
+    var avgX = sumX / latLngInDegr.length;
+    var avgY = sumY / latLngInDegr.length;
+    var avgZ = sumZ / latLngInDegr.length;
+
+    // convert average x, y, z coordinate to latitude and longtitude
+    var lng = Math.atan2(avgY, avgX);
+    var hyp = Math.sqrt(avgX * avgX + avgY * avgY);
+    var lat = Math.atan2(avgZ, hyp);
+
+    return ([rad2degr(lat), rad2degr(lng)]);
+}
+
  /**
   * Inactivate Tabs
   * 
@@ -79,10 +123,9 @@ function showMap(columns, rows) {
     }
 
     var coordinates = [];
-    var midLatLng = null;
     var startLatLng = null;
-    var midPos = Math.trunc(rows.length/2);
-
+    var stopLatLng = null;
+  
     for (row in rows) {
         if (rows[row][6] && rows[row][7]) {
             var latlng = [rows[row][6], rows[row][7]];
@@ -91,24 +134,33 @@ function showMap(columns, rows) {
                 startLatLng = latlng;
             }
 
-            if (row >= midPos && !midLatLng) {
-                midLatLng = latlng;
-            }
-
+            stopLatLng = latlng;
             coordinates.push(latlng);
+
         }
 
     }
     
+    var midLatLng = getLatLngCenter(coordinates);
+
     map = L.map('map').setView([midLatLng[0], midLatLng[1]], 15);
 
     var startIcon = L.icon({
-        iconUrl: 'icons/start-flag.png',
-        iconSize: [32, 32],
+        iconUrl: 'icons/start-marker.png',
+        iconSize: [24, 24],
+        iconAnchor: [10, 10],
+        popupAnchor: [-3, -76]
+    });    
+    
+    var stopIcon = L.icon({
+        iconUrl: 'icons/stop-marker.png',
+        iconSize: [24, 24],
+        iconAnchor: [20, 20],
         popupAnchor: [-3, -76]
     });
 
     L.marker(startLatLng, {icon: startIcon}).addTo(map);
+    L.marker(stopLatLng, {icon: stopIcon}).addTo(map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 30,
@@ -156,6 +208,7 @@ function showCharts(columns, rows) {
 
     var distanceKms = 0;
     var latlng = null;
+    var topSpeed = 0.0;
 
     for (row in rows) {
 
@@ -168,6 +221,7 @@ function showCharts(columns, rows) {
 
             latlng = [parseFloat(rows[row][6]), parseFloat(rows[row][7])];
             totalSpeed += parseFloat(rows[row][11]);
+            topSpeed = Math.max(parseFloat(rows[row][11]), topSpeed);
     
             if (row % modulus == 0) {
                dataSpeed.push(rows[row][11]);
@@ -218,9 +272,10 @@ function showCharts(columns, rows) {
     
     });  
 
-    $('#details').html('<b>Start: </b><p/>' + (new Date(Math.trunc(rows[0][12]) * 1000)) +
-    '<p/><b>Finish: </b><p/>' + (new Date(Math.trunc(labels[labels.length - 1]) * 1000)) +
+    $('#details').html('<b>Start Time: </b><p/>' + (new Date(Math.trunc(rows[0][12]) * 1000)) +
+    '<p/><b>Finish Time: </b><p/>' + (new Date(Math.trunc(labels[labels.length - 1]) * 1000)) +
     '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph" +
+    '<p/><b>Top Speed: </b><p/>' + (topSpeed.toFixed(2)) + "&nbsp;kph" +
     '<p/><b>Distance Travelled: </b><p/>' + (distanceKms.toFixed(2)) + "&nbsp;kms");
     $('#details').css('display', 'inline-block');
 
