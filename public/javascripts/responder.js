@@ -241,6 +241,8 @@ function showCharts(columns, rows) {
     var distanceKms = 0;
     var latlng = null;
     var topSpeed = 0.0;
+    var startTime = null;
+    var count = 0;
 
     for (row in rows) {
 
@@ -251,14 +253,26 @@ function showCharts(columns, rows) {
                                         parseFloat(rows[row][6]), parseFloat(rows[row][7]));
             }
 
+            if (!startTime) {
+                startTime = Math.trunc(rows[row][12]);
+            }
+
             latlng = [parseFloat(rows[row][6]), parseFloat(rows[row][7])];
             totalSpeed += parseFloat(rows[row][11]);
             topSpeed = Math.max(parseFloat(rows[row][11]), topSpeed);
-    
+            count += 1;
+
             if (row % modulus == 0) {
                dataSpeed.push(rows[row][11]);
                dataHeight.push(rows[row][4]);
-               labels.push(Math.trunc(rows[row][12]));
+               var totalSeconds = Math.trunc(rows[row][12]) - startTime;
+               var hours = Math.floor(totalSeconds / 3600);
+               totalSeconds %= 3600;
+               var minutes = Math.floor(totalSeconds / 60);
+               seconds = totalSeconds % 60;
+
+               labels.push(hours + ":" + minutes + ":" + seconds);
+
             }
         }
 
@@ -308,7 +322,7 @@ function showCharts(columns, rows) {
     });  
 
     $('#details').html('<b>Start Time: </b><p/>' + (new Date(Math.trunc(rows[0][12]) * 1000)) +
-    '<p/><b>Finish Time: </b><p/>' + (new Date(Math.trunc(labels[labels.length - 1]) * 1000)) +
+    '<p/><b>Finish Time: </b><p/>' + (new Date(Math.trunc(rows[count - 1][12]) * 1000)) +
     '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph" +
     '<p/><b>Top Speed: </b><p/>' + (topSpeed.toFixed(2)) + "&nbsp;kph" +
     '<p/><b>Distance Travelled: </b><p/>' + (distanceKms.toFixed(2)) + "&nbsp;kms");
@@ -348,8 +362,7 @@ function showGuages(columns, rows) {
         colorNeedle: 'rgba(240, 128, 128, 1)',
         colorNeedleEnd: 'rgba(255, 160, 122, .9)',
         valueBox: true,
-        animationRule: 'bounce',
-        animationDuration: 500
+        animationDuration: 100
     }).draw();
 
     var bearingGuage = new RadialGauge({
@@ -402,12 +415,21 @@ function showGuages(columns, rows) {
     bearingGuage.value = 0;
 
     $("#range").attr('max', rows.length);
-    $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[" + 1 + "]");
+    $("#range").val(0);
+    $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[0:0:0]");
 
     var slider = document.getElementById("range");
 
     slider.oninput = function() {
-         $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + this.value + "]");
+
+        var totalSeconds = Math.trunc(rows[this.value][12]) - Math.trunc(rows[0][12]);
+        var hours = Math.floor(totalSeconds / 3600);
+        totalSeconds %= 3600;
+        var minutes = Math.floor(totalSeconds / 60);
+        seconds = totalSeconds % 60;
+
+         $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + 
+                hours + ":" + minutes + ":" + seconds + "]");
 
         speedGuage.value = parseFloat(rows[this.value][11]);
 
