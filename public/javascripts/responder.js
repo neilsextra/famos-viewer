@@ -412,8 +412,8 @@ function showGuages(columns, rows) {
        
                 bearingGuage.value = geolib.getBearing({latitude: rows[prevObs][6], 
                                                         longitude:rows[prevObs][7]},
-                                                       {latitude: rows[this.value][6], 
-                                                        longitude:rows[this.value][7]});
+                                                       {latitude: rows[prevObs+1][6], 
+                                                        longitude:rows[prevObs+1][7]});
 
             }
 
