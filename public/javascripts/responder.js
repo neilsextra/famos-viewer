@@ -2,53 +2,6 @@ var map = null;
 var csvFile = null;
 
 /**
- * Distance between to points
- * 
- * @param {Float} lat1 the from Latitude
- * @param {Float} lon1 the from Longitude
- * @param {Float} lat2 the to Latitude
- * @param {Float} lon2 the to Longitude
- */
-function distance(lat1, lon1, lat2, lon2) {
-	var radlat1 = Math.PI * lat1/180;
-	var radlat2 = Math.PI * lat2/180;
-	var theta = lon1-lon2;
-	var radtheta = Math.PI * theta/180;
-    var dist = Math.sin(radlat1) * Math.sin(radlat2) +
-               Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-	if (dist > 1) {
-		dist = 1;
-	}
-    dist = Math.acos(dist)
-    
-	dist = dist * 180/Math.PI;
-	dist = dist * 60 * 1.1515;
-    return dist * 1.609344;
-    
-}
-
-function rad2degr(rad) { 
-    return rad * 180 / Math.PI; 
-}
-
-function degr2rad(degr) { 
-    return degr * Math.PI / 180; 
-}
-
-function calculateBearing(endpoint, startpoint) {
-    var radians = Math.atan2((endpoint[1]- startpoint[1]), (endpoint[0]- startpoint[0]));
-    var compassReading = radians * (180 / Math.PI);
-
-  //  var coordNames = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
-    var coordIndex = Math.round(compassReading / 45);
-    if (coordIndex < 0) {
-        coordIndex = coordIndex + 8
-    };
-   return compassReading / 45;
-    //return coordNames[coordIndex]; // returns the coordinate value
-}
-
-/**
  * Get the Central Position within a series of Lats/Longs
  * 
  * @param latLngInDeg array of arrays with latitude and longtitude
@@ -59,6 +12,15 @@ function calculateBearing(endpoint, startpoint) {
  *   degrees.
  */
 function getLatLngCenter(latLngInDegr) {
+    
+    function rad2degr(rad) { 
+        return rad * 180 / Math.PI; 
+    }
+
+    function degr2rad(degr) { 
+        return degr * Math.PI / 180; 
+    }
+
     var LATIDX = 0;
     var LNGIDX = 1;
     var sumX = 0;
@@ -249,9 +211,12 @@ function showCharts(columns, rows) {
         if (rows[row][11] && rows[row][12]) {
 
             if (latlng) {
-                distanceKms += distance(latlng[0], latlng[1], 
-                                        parseFloat(rows[row][6]), parseFloat(rows[row][7]));
-            }
+                distanceKms += geolib.getDistance({latitude: latlng[0], 
+                                        longitude: latlng[1]},
+                                       {latitude:  parseFloat(rows[row][6]), 
+                                        longitude:  parseFloat(rows[row][7])})
+
+             }
 
             if (!startTime) {
                 startTime = Math.trunc(rows[row][12]);
@@ -325,7 +290,7 @@ function showCharts(columns, rows) {
     '<p/><b>Finish Time: </b><p/>' + (new Date(Math.trunc(rows[count - 1][12]) * 1000)) +
     '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph" +
     '<p/><b>Top Speed: </b><p/>' + (topSpeed.toFixed(2)) + "&nbsp;kph" +
-    '<p/><b>Distance Travelled: </b><p/>' + (distanceKms.toFixed(2)) + "&nbsp;kms");
+    '<p/><b>Distance Travelled: </b><p/>' + ((distanceKms/1000).toFixed(2)) + "&nbsp;kms");
     $('#details').css('display', 'inline-block');
 
 }
@@ -399,7 +364,7 @@ function showGuages(columns, rows) {
         needleType:'line',
         needleStart:75,
         needleEnd: 99,
-        needleWidth: 3,
+        needleWidth: 5,
         borders: true,
         borderInnerWidth: 0,
         borderMiddleWidth: 0,
@@ -408,7 +373,7 @@ function showGuages(columns, rows) {
         colorBorderOuterEnd: '#ccc',
         colorNeedleShadowDown: '#222',
         borderShadowWidth: 0,
-        animationDuration: 100
+        animationDuration: 0
     }).draw();
 
     speedGuage.value = 0;
@@ -422,31 +387,36 @@ function showGuages(columns, rows) {
 
     slider.oninput = function() {
 
-        var totalSeconds = Math.trunc(rows[this.value][12]) - Math.trunc(rows[0][12]);
-        var hours = Math.floor(totalSeconds / 3600);
-        totalSeconds %= 3600;
-        var minutes = Math.floor(totalSeconds / 60);
-        seconds = totalSeconds % 60;
+        if (rows[this.value][12]) {
+            var totalSeconds = Math.trunc(rows[this.value][12]) - Math.trunc(rows[0][12]);
+            var hours = Math.floor(totalSeconds / 3600);
+            totalSeconds %= 3600;
+            var minutes = Math.floor(totalSeconds / 60);
+            seconds = totalSeconds % 60;
 
-         $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + 
-                hours + ":" + minutes + ":" + seconds + "]");
+            $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + 
+                    hours + ":" + minutes + ":" + seconds + "]");
 
-        speedGuage.value = parseFloat(rows[this.value][11]);
+            speedGuage.value = parseFloat(rows[this.value][11]);
 
-        if (this.value < rows.length) {
-            var nextObs = parseInt(this.value) + 1;
-            var from = [parseFloat(rows[this.value][6]), parseFloat(rows[this.value][7])];
-            var to = [parseFloat(rows[nextObs][6]), parseFloat(rows[nextObs][7])];
-
-           bearingGuage.value = calculateBearing(from, to) * 100;
+            if (this.value < rows.length - 1) {
+                var obs = parseInt(this.value);
  
-        } else {
-            var prevObs = parseInt(this.value) - 1;
-            var from = [parseFloat(rows[prevObs][6]), parseFloat(rows[prevObs][7])];
-            var to = [parseFloat(rows[this.value][6]), parseFloat(rows[this.value][7])];
+                bearingGuage.value = geolib.getBearing({latitude: rows[obs][6], 
+                    longitude:rows[obs][7]},
+                   {latitude: rows[obs + 1][6], 
+                    longitude:rows[obs + 1][7]});
+    
+            } else {
+                var prevObs = rows.length - 2;
        
-            bearingGuage.value = calculateBearing(from, to) * 100;
-       
+                bearingGuage.value = geolib.getBearing({latitude: rows[prevObs][6], 
+                                                        longitude:rows[prevObs][7]},
+                                                       {latitude: rows[this.value][6], 
+                                                        longitude:rows[this.value][7]});
+
+            }
+
         }
 
     }
