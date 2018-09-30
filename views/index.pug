@@ -48,13 +48,17 @@ block content
           div#gauges(style="position:absolute; left:0px; right:0px; top:0px; bottom:0px; border:solid;")
             canvas#speedGuage(style="position:absolute; left:20px; top:20px; height:200px;")
             canvas#bearingGuage(style="position:absolute; left:240px; top:20px; height:200px;")
+            canvas#pitchView(style="position:absolute; left:0px; top:220px; height:120px;")
+            div#pitchLabel(style="position:absolute; left:70px; top:340px; color:black; height:140px; width:300px;")
+            canvas#rollView(style="position:absolute; left:180px; top:210px; height:160px;")
+            div#rollLabel(style="position:absolute; left:300px; top:340px; color:black; height:140px; width:300px;")
             div.slidecontainer(style="position:absolute; left:10px; bottom:50px; height:30px;")
               input.slider#range(type="range" min="1" max="100" value="0")
             div#sliderValue(style="position:absolute; left:10px; padding:0px; width:800px; bottom:80px; color:black; height:50px;") 
               label#sliderPos
   
         div#actions
-          input#printBtn(type='button' value="Report" style="position:absolute; bottom:12px; height:30px; width:90px; left:10px;")
+          input#reportBtn(type='button' value="Report" style="position:absolute; bottom:12px; height:30px; width:90px; left:10px;")
   
   script(src="/modules/jquery/dist/jquery.min.js")
   script(src="/modules/geolib/dist/geolib.js")

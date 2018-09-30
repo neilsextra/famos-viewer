@@ -1,5 +1,7 @@
 var map = null;
 var csvFile = null;
+var imageVehicleSide = null;
+var imageVehicleFront= null;
 
 /**
  * Get the Central Position within a series of Lats/Longs
@@ -50,18 +52,61 @@ function getLatLngCenter(latLngInDegr) {
  }
 
  /**
+  * Calculate vehicle pitch
+  * @param {Float} x 
+  * @param {Float} y 
+  * @param {Float} z 
+  */
+ function calculatePitch(x,y,z) {
+    
+    return Math.atan2(x, Math.sqrt(y^2+z^2));
+ 
+}
+
+ /**
+  * Calculate vehicle roll
+  * 
+  * @param {Float} x 
+  * @param {Float} y 
+  * @param {Float} z 
+  */
+ function calculateRoll(x,y,z) {
+    
+    return Math.atan2(y, Math.sqrt(x^2+z^2));
+ 
+}
+
+ /**
   * Clear the Canvas
+  * 
   * @param {String} containerID the container
-  *  @param {String} canvasID the canvas to clear
+  * @param {String} canvasID the canvas to clear
   */
  function clearCanvas(parentID, canvasID) {
     $('#' + canvasID).remove(); 
 
     $(parentID).append('<canvas id= '+ canvasID + ' style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;"/>');
  }
+
+function showRotatedImage(canvas, context, image, angleInDegrees) {
+    var angleInRadians = angleInDegrees * (Math.PI/180)
+    var x = canvas.width / 2;
+    var y = canvas.height / 2;
+    var width = image.width;
+    var height = image.height;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.translate(x, y);
+    context.rotate(angleInRadians);
+ 
+    context.drawImage(image, -width / 2, -height / 2, width, height);
+    context.rotate(-angleInRadians);
+    context.translate(-x, -y);
+    
+}
+
  /**
   * Inactivate the Tabs
-  * 
   */
  function inactivateTabs() {
     var iTab, tabcontent, tabbuttons, tablinks;
@@ -379,6 +424,10 @@ function showGuages(columns, rows) {
     speedGuage.value = 0;
     bearingGuage.value = 0;
 
+    var context = $('#pitchView')[0].getContext('2d');
+    
+    showVehicleOrientation(rows[0]);
+
     $("#range").attr('max', rows.length);
     $("#range").val(0);
     $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[0:0:0]");
@@ -399,21 +448,23 @@ function showGuages(columns, rows) {
 
             speedGuage.value = parseFloat(rows[this.value][11]);
 
-            if (this.value < rows.length - 1) {
-                var obs = parseInt(this.value);
+            showVehicleOrientation(rows[this.value]);
+
+            if (this.value < rows.length - 100) {
+                var obs =  (~~(parseInt(this.value)/100)*100);
  
                 bearingGuage.value = geolib.getBearing({latitude: rows[obs][6], 
                     longitude:rows[obs][7]},
-                   {latitude: rows[obs + 1][6], 
-                    longitude:rows[obs + 1][7]});
+                   {latitude: rows[obs + 100][6], 
+                    longitude:rows[obs + 100][7]});
     
             } else {
-                var prevObs = rows.length - 2;
+                var prevObs = rows.length  - 100 < 0  ? 0 : 100;
        
                 bearingGuage.value = geolib.getBearing({latitude: rows[prevObs][6], 
                                                         longitude:rows[prevObs][7]},
-                                                       {latitude: rows[prevObs+1][6], 
-                                                        longitude:rows[prevObs+1][7]});
+                                                       {latitude: rows[this.value][6], 
+                                                        longitude:rows[this.value][7]});
 
             }
 
@@ -421,6 +472,22 @@ function showGuages(columns, rows) {
 
     }
     
+}
+
+function showVehicleOrientation(row) {
+    var pitch = calculatePitch(row[14], row[15], row[16]);
+    var contextPitch = $('#pitchView')[0].getContext('2d');
+    
+    showRotatedImage($('#pitchView')[0], contextPitch, imageVehicleSide, pitch * 100,);
+    $('#pitchLabel').html('<b>Pitch:</b>&nbsp;' + ((pitch * 100).toFixed(3)) + '&deg;');
+
+    var roll = calculateRoll(row[14], row[15], row[16]);
+    var contextRoll = $('#rollView')[0].getContext('2d');
+    
+    showRotatedImage($('#rollView')[0], contextRoll, imageVehicleFront, roll * 100);
+    $('#rollLabel').html('<b>Roll:</b>&nbsp;' + ((roll * 100).toFixed(3)) + '&deg;');
+
+
 }
 
 function display(columns, rows) {
@@ -439,13 +506,35 @@ function display(columns, rows) {
 
         showCharts(columns, rows);
         showGuages(columns, rows);
+        
         console.log('completed conversion');
 
     }, 100);
 
 }
 
+
+$('#reportBtn').on('click', function(e) {
+
+    if (map) {
+        leafletImage(map, function(err, canvas) {
+            var img = document.createElement('img');
+            var dimensions = map.getSize();
+            img.width = dimensions.x;
+            img.height = dimensions.y;
+            img.src = canvas.toDataURL();
+        });
+    }
+    return false;
+
+ });
+
 $(document).ready(function() {
+    imageVehicleSide = new Image();
+    imageVehicleSide.src = 'icons/jeep-side.png';
+
+    imageVehicleFront = new Image();
+    imageVehicleFront.src = 'icons/jeep-front.png';
     var header = $('#caption').html();
     var dropzone = $('#droparea');
      
