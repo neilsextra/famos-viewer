@@ -11,6 +11,33 @@ var imageVehicleSide = null;
 var imageVehicleFront= null;
 
 /**
+ * Distance between to points
+ * 
+ * @param {Float} lat1 the From Latitude
+ * @param {Float} lon1 the From Longitude
+ * @param {Float} lat2 the To Latitude
+ * @param {Float} lon2 the To Longitude
+ */
+function distance(lat1, lon1, lat2, lon2) {
+	var radlat1 = Math.PI * lat1/180;
+	var radlat2 = Math.PI * lat2/180;
+	var theta = lon1-lon2;
+	var radtheta = Math.PI * theta/180;
+    var dist = Math.sin(radlat1) * Math.sin(radlat2) +
+               Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+	if (dist > 1) {
+		dist = 1;
+	}
+    dist = Math.acos(dist)
+    
+	dist = dist * 180/Math.PI;
+    dist = dist * 60 * 1.1515;
+    
+    return dist * 1.609344;
+    
+}
+
+/**
  * Get the Central Position within a series of Lats/Longs
  * 
  * @param latLngInDeg array of arrays with latitude and longtitude
@@ -269,12 +296,11 @@ function showCharts(columns, rows) {
 
         if (rows[row][11] && rows[row][12] && rows[row][11] != 0 && rows[row][11] != 0) {
 
-            if (latlng) {
-                distanceKms += geolib.getDistance({latitude: latlng[0], 
-                                        longitude: latlng[1]},
-                                       {latitude:  parseFloat(rows[row][6]), 
-                                        longitude:  parseFloat(rows[row][7])})
-
+            if (latlng) {             
+               distanceKms += distance(latlng[0], latlng[1], 
+                    parseFloat(rows[row][6]),
+                    parseFloat(rows[row][7]));
+               
              }
 
             if (!startTime) {
@@ -349,7 +375,7 @@ function showCharts(columns, rows) {
     '<p/><b>Finish Time: </b><p/>' + (new Date(Math.trunc(rows[count - 1][12]) * 1000)) +
     '<p/><b>Average Speed: </b><p/>' + ((totalSpeed/rows.length).toFixed(2)) + "&nbsp;kph" +
     '<p/><b>Top Speed: </b><p/>' + (topSpeed.toFixed(2)) + "&nbsp;kph" +
-    '<p/><b>Distance Travelled: </b><p/>' + ((distanceKms/1000).toFixed(2)) + "&nbsp;kms");
+    '<p/><b>Distance Travelled: </b><p/>' + ((distanceKms).toFixed(2)) + "&nbsp;kms");
     $('#details').css('display', 'inline-block');
 
 }
