@@ -1,3 +1,10 @@
+/**
+ * Famos Log Viewer
+ * 
+ * Author: Neil Brittliff (Microsoft)
+ * 
+ */
+
 var map = null;
 var csvFile = null;
 var imageVehicleSide = null;
@@ -145,6 +152,11 @@ function showTab(evt, tab, button) {
 
 }
 
+/**
+ * Show the Map
+ * @param {*} columns the columns in the data
+ * @param {*} rows the data rows
+ */
 function showMap(columns, rows) {
     
     $('#map').css('display', 'none');  
@@ -160,7 +172,7 @@ function showMap(columns, rows) {
     var stopLatLng = null;
   
     for (row in rows) {
-        if (rows[row][6] && rows[row][7]) {
+        if (rows[row][6] && rows[row][7] && rows[row][6] != 0 && rows[row][7]) {
             var latlng = [rows[row][6], rows[row][7]];
 
             if (startLatLng == null) {
@@ -176,7 +188,9 @@ function showMap(columns, rows) {
     
     var midLatLng = getLatLngCenter(coordinates);
 
-    map = L.map('map').setView([midLatLng[0], midLatLng[1]], 15);
+    map = L.map('map', {
+        preferCanvas: true
+    }).setView([midLatLng[0], midLatLng[1]], 15);
 
     var startIcon = L.icon({
         iconUrl: 'icons/start-marker.png',
@@ -253,7 +267,7 @@ function showCharts(columns, rows) {
 
     for (row in rows) {
 
-        if (rows[row][11] && rows[row][12]) {
+        if (rows[row][11] && rows[row][12] && rows[row][11] != 0 && rows[row][11] != 0) {
 
             if (latlng) {
                 distanceKms += geolib.getDistance({latitude: latlng[0], 
@@ -272,7 +286,7 @@ function showCharts(columns, rows) {
             topSpeed = Math.max(parseFloat(rows[row][11]), topSpeed);
             count += 1;
 
-            if (row % modulus == 0) {
+            if (row % modulus == 0 && rows[row][11] != 0 && rows[row][4] != 0) {
                dataSpeed.push(rows[row][11]);
                dataHeight.push(rows[row][4]);
                var totalSeconds = Math.trunc(rows[row][12]) - startTime;
@@ -296,7 +310,7 @@ function showCharts(columns, rows) {
             labels: labels,
          datasets: [{ 
             data: dataSpeed,
-            label: "Speed",
+            label: "Speed in Kmh",
             borderColor: "#3e95cd",
             fill: false
       }],
@@ -317,7 +331,7 @@ function showCharts(columns, rows) {
             labels: labels,
          datasets: [{ 
             data: dataHeight,
-            label: "Height",
+            label: "Height in metres",
             borderColor: "#3e95cd",
             fill: false
       }],
@@ -340,10 +354,15 @@ function showCharts(columns, rows) {
 
 }
 
-function showGuages(columns, rows) {
+/**
+ * Show the Gauges
+ * @param {*} columns 
+ * @param {*} rows 
+ */
+function showGauges(columns, rows) {
 
-    var speedGuage = new RadialGauge({
-        renderTo: 'speedGuage',
+    var speedGauge = new RadialGauge({
+        renderTo: 'speedGauge',
         width: 200,
         height: 200,
         units: 'Km/h',
@@ -375,8 +394,10 @@ function showGuages(columns, rows) {
         animationDuration: 100
     }).draw();
 
-    var bearingGuage = new RadialGauge({
-        renderTo: 'bearingGuage',
+    var bearingGauge = new RadialGauge({
+        dataMinValue:0,
+        dataMaxValue:360,
+        renderTo: 'bearingGauge',
         width: 200,
         height: 200,
         title: false,
@@ -405,7 +426,6 @@ function showGuages(columns, rows) {
         colorNeedleCircleOuter: "#ccc",
         needleCircleSize: 15,
         needleCircleOuter: false,
-        animationRule: 'linear',
         needleType:'line',
         needleStart:75,
         needleEnd: 99,
@@ -418,11 +438,12 @@ function showGuages(columns, rows) {
         colorBorderOuterEnd: '#ccc',
         colorNeedleShadowDown: '#222',
         borderShadowWidth: 0,
-        animationDuration: 0
+        animationRule:"linear",
+        animationDuration:100
     }).draw();
 
-    speedGuage.value = 0;
-    bearingGuage.value = 0;
+    speedGauge.value = 0;
+    bearingGauge.value = 0;
 
     var context = $('#pitchView')[0].getContext('2d');
     
@@ -430,13 +451,20 @@ function showGuages(columns, rows) {
 
     $("#range").attr('max', rows.length);
     $("#range").val(0);
+
     $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[0][12]) * 1000)) + "&nbsp;[0:0:0]");
 
     var slider = document.getElementById("range");
-
+    bearingGauge.value = 0;
+    let timerId = null;
+    var speed = 0;
+    var bearing = 0;
+    
     slider.oninput = function() {
 
-        if (rows[this.value][12]) {
+        if (this.value < rows.length) {
+            var sample = rows.length >= 10000 ? 1000 : 10;
+
             var totalSeconds = Math.trunc(rows[this.value][12]) - Math.trunc(rows[0][12]);
             var hours = Math.floor(totalSeconds / 3600);
             totalSeconds %= 3600;
@@ -444,29 +472,27 @@ function showGuages(columns, rows) {
             seconds = totalSeconds % 60;
 
             $('#sliderPos').html("<b>Time:</b>&nbsp;" + (new Date(Math.trunc(rows[this.value][12]) * 1000)) + "&nbsp;[" + 
-                    hours + ":" + minutes + ":" + seconds + "]");
+                    hours + ":" + minutes + ":" + seconds + "] - [Observation&nbsp;:&nbsp;" + this.value + "&nbsp;]");
+            speed = parseFloat(rows[this.value][11]);
+            bearing = Math.trunc(rows[this.value][1]);
 
-            speedGuage.value = parseFloat(rows[this.value][11]);
+            if (timerId == null) { 
+                timerId = setTimeout(function() {
+                    speedGauge.value = speed;
+                    console.log('Bearing: ' + bearing);
+
+                    bearingGauge.value = bearing;
+
+                    bearingGauge.draw();
+                    speedGauge.draw();
+                    
+                    timerId = null;
+
+                }, 200);
+            
+            }
 
             showVehicleOrientation(rows[this.value]);
-
-            if (this.value < rows.length - 100) {
-                var obs =  (~~(parseInt(this.value)/100)*100);
- 
-                bearingGuage.value = geolib.getBearing({latitude: rows[obs][6], 
-                    longitude:rows[obs][7]},
-                   {latitude: rows[obs + 100][6], 
-                    longitude:rows[obs + 100][7]});
-    
-            } else {
-                var prevObs = rows.length  - 100 < 0  ? 0 : 100;
-       
-                bearingGuage.value = geolib.getBearing({latitude: rows[prevObs][6], 
-                                                        longitude:rows[prevObs][7]},
-                                                       {latitude: rows[this.value][6], 
-                                                        longitude:rows[this.value][7]});
-
-            }
 
         }
 
@@ -474,6 +500,10 @@ function showGuages(columns, rows) {
     
 }
 
+/**
+ * The row to process
+ * @param {*} row the famos row to process
+ */
 function showVehicleOrientation(row) {
     var pitch = calculatePitch(row[14], row[15], row[16]);
     var contextPitch = $('#pitchView')[0].getContext('2d');
@@ -486,7 +516,6 @@ function showVehicleOrientation(row) {
     
     showRotatedImage($('#rollView')[0], contextRoll, imageVehicleFront, roll * 100);
     $('#rollLabel').html('<b>Roll:</b>&nbsp;' + ((roll * 100).toFixed(3)) + '&deg;');
-
 
 }
 
@@ -505,7 +534,7 @@ function display(columns, rows) {
         $('#tab1').addClass('active');
 
         showCharts(columns, rows);
-        showGuages(columns, rows);
+        showGauges(columns, rows);
         
         console.log('completed conversion');
 
@@ -513,18 +542,50 @@ function display(columns, rows) {
 
 }
 
-
 $('#reportBtn').on('click', function(e) {
-
+    $("#modal").css('display', 'inline-block');
+    var done = false;
+    
     if (map) {
         leafletImage(map, function(err, canvas) {
-            var img = document.createElement('img');
+   
+            document.body.onfocus = function() {   
+
+                loadTimer = setTimeout(
+                  () => { 
+                    $("#modal").css('display', 'none');
+                }, 200);
+       
+                document.body.onfocus = null;
+             
+            }
+            
+            var imgData = canvas.toDataURL("image/svg+xml", 1.0);
+
             var dimensions = map.getSize();
-            img.width = dimensions.x;
-            img.height = dimensions.y;
-            img.src = canvas.toDataURL();
+            var pdf = new jsPDF('l', 'pt', 'letter');
+            pdf.text(24, 20, 'Famos IMC Report');
+
+            pdf.addImage(imgData, 'PNG', 30, 50, dimensions.x * 0.5, dimensions.y * 0.5);
+            var source = window.document.getElementById('details');
+            pdf.setFontSize(9);
+            pdf.fromHTML(
+                source,
+                34,
+                465,
+                {
+                    'width': 500
+                }
+
+            );
+
+            pdf.save("famos-analysis.pdf");
+            
+            $("#modal").css('display', 'none');
+ 
         });
     }
+
     return false;
 
  });
