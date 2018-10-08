@@ -58,7 +58,20 @@ block content
               input.slider#range(type="range" min="1" max="100" value="0")
             div#sliderValue(style="position:absolute; left:10px; padding:0px; width:1000px; bottom:80px; color:black; height:50px;") 
               label#sliderPos
-  
+            div(style="position:absolute; left:10px; bottom:10px; width:100%;")
+              button.small-button#bluePin
+                img(src="icons/blue-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("blue-pin")' alt="Blue Pin")
+              button.small-button#redPin
+                img(src="icons/red-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("red-pin")' alt="Red Pin")
+              button.small-button#greenPin
+                img(src="icons/green-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("green-pin")' alt="Green Pin")
+              button.small-button#blackPin
+                img(src="icons/black-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("black-pin")' alt="Black Pin")
+              button.small-button#purplePin
+                img(src="icons/purple-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("purple-pin")' alt="Purple Pin")
+              button.small-button#yellowPin
+                img(src="icons/yellow-pin.png" style="margin-left:0px; margin-top:1px;" onclick='placePin("yellow-pin")' alt="Yellow Pin")
+ 
         div#actions
           input#reportBtn(type='button' value="Report" style="position:absolute; bottom:12px; height:30px; width:90px; left:10px;")
     div#modal.modal

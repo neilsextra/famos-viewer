@@ -7,6 +7,7 @@
 
 var map = null;
 var csvFile = null;
+var currentLatLng = null;
 var imageVehicleSide = null;
 var imageVehicleFront= null;
 
@@ -119,7 +120,9 @@ function getLatLngCenter(latLngInDegr) {
  function clearCanvas(parentID, canvasID) {
     $('#' + canvasID).remove(); 
 
-    $(parentID).append('<canvas id= '+ canvasID + ' style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;"/>');
+    $(parentID).append('<canvas id= '+ canvasID + 
+                       ' style="position:absolute; left:0px; right:0px; top:0px; bottom:0px;"/>');
+
  }
 
 function showRotatedImage(canvas, context, image, angleInDegrees) {
@@ -137,7 +140,18 @@ function showRotatedImage(canvas, context, image, angleInDegrees) {
     context.rotate(-angleInRadians);
     context.translate(-x, -y);
     
-}
+ }
+
+ function placePin(colour) {
+    var icon = L.icon({
+        iconUrl:      'icons/' + colour + '.png',  
+        iconSize:     [16, 16],
+        popupAnchor:  [-3, -76] 
+    });
+
+    L.marker([currentLatLng.latitude, currentLatLng.longitude], {icon: icon}).addTo(map);
+
+ }
 
  /**
   * Inactivate the Tabs
@@ -213,6 +227,12 @@ function showMap(columns, rows) {
 
     }
     
+    currentLatLng = {
+                        latitude: startLatLng[0],
+                        longitude: startLatLng[0]
+
+                    };
+                    
     var midLatLng = getLatLngCenter(coordinates);
 
     map = L.map('map', {
@@ -489,6 +509,12 @@ function showGauges(columns, rows) {
     slider.oninput = function() {
 
         if (this.value < rows.length) {
+            
+            currentLatLng = {
+                latitude : rows[this.value][6],
+                longitude : rows[this.value][7]
+            };
+
             var sample = rows.length >= 10000 ? 1000 : 10;
 
             var totalSeconds = Math.trunc(rows[this.value][12]) - Math.trunc(rows[0][12]);
